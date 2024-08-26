@@ -4,7 +4,6 @@ import re
 from typing import Union
 
 import bleach
-from bleach.css_sanitizer import CSSSanitizer, ALLOWED_CSS_PROPERTIES
 from django.template import loader, Template, TemplateSyntaxError, Context
 from django.template.backends.django import DjangoTemplates
 from django.template.loader import _engine_list
@@ -148,18 +147,11 @@ class EmailPreview(abc.ABC):
 
     @staticmethod
     def _clean_content(content):
-        allowed_css_properties = [
-            'padding', 'margin', 'border'
-        ] + list(ALLOWED_CSS_PROPERTIES)
-        css_sanitizer = CSSSanitizer(
-            allowed_css_properties=set(allowed_css_properties)
-        )
         return bleach.clean(
             content,
             tags=ALLOWED_EMAIL_ATTRIBUTES.keys(),
             attributes=ALLOWED_EMAIL_ATTRIBUTES,
             strip_comments=False,
-            css_sanitizer=css_sanitizer,
         )
 
     def write(self, content):
