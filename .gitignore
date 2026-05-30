@@ -211,3 +211,5 @@ dev/
 
 **/__pycache__/
 !/email_editor/static/email_editor/js/ckeditor5/build/
+
+*.pyc
