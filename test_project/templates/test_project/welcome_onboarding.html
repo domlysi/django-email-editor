@@ -1,0 +1,159 @@
+<!-- Subject: Welcome aboard, {{ user.first_name|default:user.username }}! 🎉 -->
+{% load i18n %}
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark">
+<style>
+@media only screen and (max-width: 600px) {
+  table.ee-outer { width: 100% !important; }
+  td.ee-col { display: block !important; width: 100% !important; max-width: 100% !important; padding: 0 0 12px 0 !important; box-sizing: border-box !important; }
+  table.ee-card { width: 100% !important; }
+  td.ee-card-wrap { padding-left: 20px !important; padding-right: 20px !important; }
+}
+@media (prefers-color-scheme: dark) {
+  body.ee-body, table.ee-bg { background-color: #1a1a2e !important; }
+  table.ee-card { background-color: #252535 !important; }
+  td.dm-intro { color: #c8cacd !important; }
+  div.dm-feature-blue { background-color: #1a2040 !important; }
+  div.dm-feature-blue strong { color: #e8eaed !important; }
+  div.dm-feature-blue p { color: #9aa0a6 !important; }
+  div.dm-feature-green { background-color: #0d2a1a !important; }
+  div.dm-feature-green strong { color: #e8eaed !important; }
+  div.dm-feature-green p { color: #9aa0a6 !important; }
+  div.dm-feature-orange { background-color: #2a1a0d !important; }
+  div.dm-feature-orange strong { color: #e8eaed !important; }
+  div.dm-feature-orange p { color: #9aa0a6 !important; }
+  table.dm-detail-box { border-color: #3c3c4c !important; }
+  td.dm-detail-hdr { background-color: #1e1e2e !important; color: #9aa0a6 !important; }
+  td.dm-label { color: #9aa0a6 !important; }
+  td.dm-value { color: #e8eaed !important; }
+  span.dm-badge-green { background-color: #0d2a12 !important; color: #66bb6a !important; }
+  td.dm-footer { background-color: #1e1e2e !important; border-top-color: #3c3c4c !important; }
+  td.dm-footer p { color: #9aa0a6 !important; }
+  td.dm-footer a { color: #78aff5 !important; }
+}
+</style>
+</head>
+<body class="ee-body" style="margin:0;padding:0;background-color:#f0f4f8;font-family:Arial,sans-serif;">
+
+<table class="ee-bg" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f0f4f8;">
+  <tr>
+    <td align="center" style="padding:40px 10px;">
+
+      <table class="ee-card" width="600" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.1);">
+
+        <!-- Hero -->
+        <tr>
+          <td style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);padding:50px 40px;text-align:center;">
+            <p style="margin:0 0 8px;font-size:40px;line-height:1;">🎉</p>
+            <h1 style="margin:0;color:#ffffff;font-size:28px;font-weight:700;letter-spacing:-0.5px;">Welcome to Example App!</h1>
+            <p style="margin:12px 0 0;color:rgba(255,255,255,0.85);font-size:15px;">Hi {{ user.first_name|default:user.username }}, we're thrilled to have you.</p>
+          </td>
+        </tr>
+
+        <!-- Intro -->
+        <tr>
+          <td class="dm-intro" style="padding:36px 40px 24px;font-size:15px;color:#3c4043;line-height:1.7;text-align:center;">
+            <p style="margin:0;">Your account is ready. Here's everything you need to hit the ground running:</p>
+          </td>
+        </tr>
+
+        <!-- 3-step feature grid -->
+        <tr>
+          <td style="padding:0 40px 32px;">
+            <table class="ee-outer" width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <!-- Step 1 -->
+                <td class="ee-col" width="33%" style="padding:0 8px;text-align:center;vertical-align:top;">
+                  <div class="dm-feature-blue" style="background:#f0f4ff;border-radius:8px;padding:20px 12px;">
+                    <div style="font-size:28px;line-height:1;margin-bottom:10px;">⚡</div>
+                    <strong style="font-size:14px;color:#202124;">Quick Setup</strong>
+                    <p style="margin:8px 0 0;font-size:12px;color:#5f6368;line-height:1.5;">Complete your profile in under 2 minutes.</p>
+                  </div>
+                </td>
+                <!-- Step 2 -->
+                <td class="ee-col" width="33%" style="padding:0 8px;text-align:center;vertical-align:top;">
+                  <div class="dm-feature-green" style="background:#f0fff4;border-radius:8px;padding:20px 12px;">
+                    <div style="font-size:28px;line-height:1;margin-bottom:10px;">📚</div>
+                    <strong style="font-size:14px;color:#202124;">Explore Docs</strong>
+                    <p style="margin:8px 0 0;font-size:12px;color:#5f6368;line-height:1.5;">Our guides will have you productive fast.</p>
+                  </div>
+                </td>
+                <!-- Step 3 -->
+                <td class="ee-col" width="33%" style="padding:0 8px;text-align:center;vertical-align:top;">
+                  <div class="dm-feature-orange" style="background:#fff8f0;border-radius:8px;padding:20px 12px;">
+                    <div style="font-size:28px;line-height:1;margin-bottom:10px;">💬</div>
+                    <strong style="font-size:14px;color:#202124;">Get Support</strong>
+                    <p style="margin:8px 0 0;font-size:12px;color:#5f6368;line-height:1.5;">Our team is here 24/7 to help you.</p>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Account details box -->
+        <tr>
+          <td style="padding:0 40px 32px;">
+            <table class="dm-detail-box" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #e0e0e0;border-radius:6px;">
+              <tr>
+                <td class="dm-detail-hdr" style="background:#f8f9fa;padding:12px 20px;border-radius:6px 6px 0 0;font-size:12px;font-weight:700;color:#5f6368;text-transform:uppercase;letter-spacing:0.5px;">Your Account Details</td>
+              </tr>
+              <tr>
+                <td style="padding:16px 20px;">
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td class="dm-label" style="font-size:13px;color:#5f6368;padding:4px 0;width:120px;">Username</td>
+                      <td class="dm-value" style="font-size:13px;color:#202124;font-weight:600;padding:4px 0;">{{ user.username }}</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-label" style="font-size:13px;color:#5f6368;padding:4px 0;">Email</td>
+                      <td class="dm-value" style="font-size:13px;color:#202124;font-weight:600;padding:4px 0;">{{ user.email }}</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-label" style="font-size:13px;color:#5f6368;padding:4px 0;">Plan</td>
+                      <td style="font-size:13px;padding:4px 0;">
+                        <span class="dm-badge-green" style="background:#e8f5e9;color:#2e7d32;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:600;">{{ user.plan|default:"Free" }}</span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="dm-label" style="font-size:13px;color:#5f6368;padding:4px 0;">Member since</td>
+                      <td class="dm-value" style="font-size:13px;color:#202124;font-weight:600;padding:4px 0;">{{ user.date_joined|date:"N j, Y" }}</td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- CTA -->
+        <tr>
+          <td style="padding:0 40px 40px;text-align:center;">
+            <a href="{{ onboarding_url|default:'#' }}" style="display:inline-block;background:#667eea;color:#ffffff;text-decoration:none;padding:14px 40px;border-radius:4px;font-size:15px;font-weight:600;">Start Your Journey →</a>
+            <p style="margin:16px 0 0;font-size:13px;color:#80868b;">Or <a href="{{ login_url|default:'#' }}" style="color:#667eea;text-decoration:none;">log in to your account</a></p>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td class="dm-footer" style="background:#f8f9fa;padding:20px 40px;text-align:center;border-top:1px solid #e0e0e0;">
+            <p style="margin:0;font-size:12px;color:#80868b;">
+              You received this because you created an account at Example App.<br>
+              <a href="#" style="color:#1a73e8;text-decoration:none;">Unsubscribe</a> · <a href="#" style="color:#1a73e8;text-decoration:none;">Privacy Policy</a><br>
+              © 2026 Example App
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+
+</body>
+</html>

@@ -6,33 +6,85 @@ from django.test.signals import setting_changed
 
 class WYSIWYGEditor(str, Enum):
     TINY_MCE = 'tinymce'
-    CKEDITOR = 'ckeditor'
+    CKEDITOR5 = "ckeditor5"
     ACE = 'ace'
 
 
 DEFAULTS = {
-    'TINY_MCE_COLOR_MAP':  [
-        '000000', 'Black',
-        '808080', 'Gray',
-        'FFFFFF', 'White',
-        'FF0000', 'Red',
-        'FFFF00', 'Yellow',
-        '008000', 'Green',
-        '0000FF', 'Blue'
+    "TINY_MCE_COLOR_MAP": [
+        "000000",
+        "Black",
+        "808080",
+        "Gray",
+        "FFFFFF",
+        "White",
+        "FF0000",
+        "Red",
+        "FFFF00",
+        "Yellow",
+        "008000",
+        "Green",
+        "0000FF",
+        "Blue",
     ],
-    'PREVIEW_ONLY': False,
-    'TINY_MCE_INIT': {
-        'selector': '#htmlEditor',
-        'plugins': ['code', 'table', 'link', 'lists', 'media', 'image', 'emoticons', 'quickbars', 'autoresize'],
-        'entity_encoding': 'raw',
-
-        'toolbar': 'undo redo | emoticons | blocks | styleselect | hr | bold italic forecolor backcolor |' +
-                   'alignleft aligncenter alignright alignjustify |' +
-                   'bullist numlist outdent indent | link image | code',
-        'extended_valid_elements': 'svg[*],defs[*],pattern[*],desc[*],metadata[*],g[*],mask[*],path[*],line[*],marker[*],rect[*],circle[*],ellipse[*],polygon[*],polyline[*],linearGradient[*],radialGradient[*],stop[*],image[*],view[*],text[*],textPath[*],title[*],tspan[*],glyph[*],symbol[*],switch[*],use[*]',
+    "PREVIEW_ONLY": False,
+    "TINY_MCE_INIT": {
+        "selector": "#htmlEditor",
+        "license_key": "gpl",
+        "plugins": [
+            "code",
+            "fullscreen",
+            "preview",
+            "searchreplace",
+            "table",
+            "link",
+            "lists",
+            "media",
+            "image",
+            "emoticons",
+            "quickbars",
+            "autoresize",
+            "visualblocks",
+            "charmap",
+            "anchor",
+            "wordcount",
+            "help",
+        ],
+        "entity_encoding": "raw",
+        "toolbar": (
+            "undo redo | fullscreen preview | "
+            "blocks fontfamily fontsize | "
+            "bold italic underline strikethrough | "
+            "forecolor backcolor | "
+            "alignleft aligncenter alignright alignjustify | "
+            "bullist numlist outdent indent | "
+            "link image | "
+            "table | "
+            "code searchreplace | "
+            "charmap emoticons | help"
+        ),
+        "font_family_formats": (
+            "Arial=arial,helvetica,sans-serif;"
+            "Georgia=georgia,'times new roman',serif;"
+            "Courier New='courier new',courier,monospace;"
+            "Tahoma=tahoma,sans-serif;"
+            "Trebuchet MS='trebuchet ms',helvetica,sans-serif;"
+            "Verdana=verdana,sans-serif"
+        ),
+        "font_size_formats": "10pt 11pt 12pt 13pt 14pt 16pt 18pt 20pt 24pt 28pt 32pt 36pt",
+        "content_style": "body { font-family: Arial, sans-serif; font-size: 14px; max-width: 640px; margin: 0 auto; padding: 8px; }",
+        "table_default_styles": {"width": "100%", "border-collapse": "collapse"},
+        "table_default_attributes": {
+            "border": "0",
+            "cellpadding": "0",
+            "cellspacing": "0",
+        },
+        "quickbars_selection_toolbar": "bold italic underline | forecolor | link | blocks",
+        "autoresize_overflow_padding": 10,
+        "extended_valid_elements": "svg[*],defs[*],pattern[*],desc[*],metadata[*],g[*],mask[*],path[*],line[*],marker[*],rect[*],circle[*],ellipse[*],polygon[*],polyline[*],linearGradient[*],radialGradient[*],stop[*],image[*],view[*],text[*],textPath[*],title[*],tspan[*],glyph[*],symbol[*],switch[*],use[*]",
     },
-    'WYSIWYG_EDITOR': WYSIWYGEditor.CKEDITOR,
-    'CONTEXT_TREE_MAX_DEPTH': 3
+    "WYSIWYG_EDITOR": WYSIWYGEditor.TINY_MCE,
+    "CONTEXT_TREE_MAX_DEPTH": 3,
 }
 
 

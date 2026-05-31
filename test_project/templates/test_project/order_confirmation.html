@@ -1,0 +1,150 @@
+<!-- Subject: Your Order #{{ order.number }} is Confirmed! -->
+{% load i18n %}
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark">
+<style>
+@media only screen and (max-width: 600px) {
+  table.ee-card { width: 100% !important; }
+  td.ee-card-wrap { padding-left: 20px !important; padding-right: 20px !important; }
+}
+@media (prefers-color-scheme: dark) {
+  body.ee-body, table.ee-bg { background-color: #1a1a2e !important; }
+  table.ee-card { background-color: #252535 !important; }
+  td.dm-order-banner { background-color: #1a2840 !important; border-bottom-color: #2a3a5e !important; }
+  td.dm-order-banner td { color: #c8cacd !important; }
+  span.dm-status { color: #78aff5 !important; }
+  h2.dm-heading { color: #e8eaed !important; }
+  table.dm-items-table thead tr { background-color: #1e1e2e !important; }
+  table.dm-items-table th { color: #9aa0a6 !important; border-color: #3c3c4c !important; }
+  table.dm-items-table td { color: #c8cacd !important; border-color: #3c3c4c !important; }
+  td.dm-total { color: #e8eaed !important; border-color: #3c3c4c !important; }
+  td.dm-total-amt { color: #78aff5 !important; border-color: #3c3c4c !important; }
+  p.dm-addr { color: #c8cacd !important; }
+  td.dm-footer { background-color: #1e1e2e !important; border-top-color: #3c3c4c !important; }
+  td.dm-footer p { color: #9aa0a6 !important; }
+  td.dm-footer a { color: #78aff5 !important; }
+}
+</style>
+</head>
+<body class="ee-body" style="margin:0;padding:0;background-color:#f4f4f4;font-family:Arial,sans-serif;">
+
+<table class="ee-bg" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4f4f4;">
+  <tr>
+    <td align="center" style="padding:40px 10px;">
+
+      <!-- Card wrapper -->
+      <table class="ee-card" width="600" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+
+        <!-- Header -->
+        <tr>
+          <td style="background-color:#1a73e8;padding:32px 40px;text-align:center;">
+            <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;letter-spacing:-0.5px;">🛒 Order Confirmed!</h1>
+            <p style="margin:8px 0 0;color:#cce3fc;font-size:14px;">Thank you for your purchase, {{ user.first_name|default:user.username }}.</p>
+          </td>
+        </tr>
+
+        <!-- Order summary banner -->
+        <tr>
+          <td class="dm-order-banner" style="background:#e8f0fe;padding:16px 40px;border-bottom:1px solid #d2e3fc;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="font-size:13px;color:#3c4043;">
+                  <strong>Order number:</strong> #{{ order.number }}<br>
+                  <strong>Date:</strong> {{ order.date }}
+                </td>
+                <td align="right" style="font-size:13px;color:#3c4043;">
+                  <strong>Status:</strong> <span class="dm-status" style="color:#1a73e8;font-weight:600;">Processing</span>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Body -->
+        <tr>
+          <td style="padding:32px 40px;">
+
+            <!-- Items table -->
+            <h2 class="dm-heading" style="margin:0 0 16px;font-size:17px;color:#1f1f1f;">Your Items</h2>
+            <table class="dm-items-table" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+              <thead>
+                <tr style="background:#f8f9fa;">
+                  <th style="text-align:left;padding:10px 12px;font-size:12px;color:#5f6368;text-transform:uppercase;border-bottom:2px solid #e0e0e0;">Product</th>
+                  <th style="text-align:center;padding:10px 12px;font-size:12px;color:#5f6368;text-transform:uppercase;border-bottom:2px solid #e0e0e0;">Qty</th>
+                  <th style="text-align:right;padding:10px 12px;font-size:12px;color:#5f6368;text-transform:uppercase;border-bottom:2px solid #e0e0e0;">Price</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in order.items %}
+                <tr>
+                  <td style="padding:12px;border-bottom:1px solid #f0f0f0;font-size:14px;color:#3c4043;">
+                    <strong>{{ item.name }}</strong>
+                    {% if item.variant %}<br><span style="font-size:12px;color:#80868b;">{{ item.variant }}</span>{% endif %}
+                  </td>
+                  <td style="padding:12px;border-bottom:1px solid #f0f0f0;text-align:center;font-size:14px;color:#3c4043;">{{ item.qty }}</td>
+                  <td style="padding:12px;border-bottom:1px solid #f0f0f0;text-align:right;font-size:14px;color:#3c4043;">{{ item.price }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="3" style="padding:12px;font-size:14px;color:#80868b;font-style:italic;">— No items —</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="2" style="padding:12px;text-align:right;font-size:14px;color:#3c4043;border-top:2px solid #e0e0e0;">Subtotal</td>
+                  <td style="padding:12px;text-align:right;font-size:14px;color:#3c4043;border-top:2px solid #e0e0e0;">{{ order.subtotal }}</td>
+                </tr>
+                <tr>
+                  <td colspan="2" style="padding:4px 12px;text-align:right;font-size:14px;color:#3c4043;">Shipping</td>
+                  <td style="padding:4px 12px;text-align:right;font-size:14px;color:#3c4043;">{{ order.shipping }}</td>
+                </tr>
+                <tr>
+                  <td class="dm-total" colspan="2" style="padding:12px;text-align:right;font-size:16px;font-weight:700;color:#1f1f1f;border-top:2px solid #e0e0e0;">Total</td>
+                  <td class="dm-total-amt" style="padding:12px;text-align:right;font-size:16px;font-weight:700;color:#1a73e8;border-top:2px solid #e0e0e0;">{{ order.total }}</td>
+                </tr>
+              </tfoot>
+            </table>
+
+            <!-- Shipping address -->
+            <h2 class="dm-heading" style="margin:28px 0 12px;font-size:17px;color:#1f1f1f;">Shipping Address</h2>
+            <p class="dm-addr" style="margin:0;font-size:14px;color:#3c4043;line-height:1.6;">
+              {{ order.shipping_name }}<br>
+              {{ order.shipping_address }}<br>
+              {{ order.shipping_city }}, {{ order.shipping_zip }}<br>
+              {{ order.shipping_country }}
+            </p>
+
+            <!-- CTA -->
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:32px;">
+              <tr>
+                <td align="center">
+                  <a href="{{ order.tracking_url }}" style="display:inline-block;background:#1a73e8;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:4px;font-size:15px;font-weight:600;">Track My Order</a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td class="dm-footer" style="background:#f8f9fa;padding:20px 40px;text-align:center;border-top:1px solid #e0e0e0;">
+            <p style="margin:0;font-size:12px;color:#80868b;">
+              Questions? <a href="mailto:support@example.com" style="color:#1a73e8;text-decoration:none;">Contact Support</a><br>
+              © 2026 Example Shop. All rights reserved.
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+
+</body>
+</html>

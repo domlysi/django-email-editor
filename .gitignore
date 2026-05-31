@@ -42,6 +42,7 @@ pip-delete-this-directory.txt
 # Unit test / coverage reports
 htmlcov/
 .tox/
+.requirements.log
 .nox/
 .coverage
 .coverage.*
@@ -210,6 +211,5 @@ fabric.properties
 dev/
 
 **/__pycache__/
-!/email_editor/static/email_editor/js/ckeditor5/build/
 
 *.pyc

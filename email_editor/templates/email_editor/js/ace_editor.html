@@ -3,26 +3,111 @@
 <script src="{% static 'email_editor/js/ace/src-min/ext-beautify.js' %}" type="text/javascript" charset="utf-8"></script>
 <script src="{% static 'email_editor/js/ace/src-min/mode-django.js' %}" type="text/javascript" charset="utf-8"></script>
 <script src="{% static 'email_editor/js/ace/src-min/ext-language_tools.js' %}" type="text/javascript" charset="utf-8"></script>
+<script src="{% static 'email_editor/js/ace/src-min/ext-searchbox.js' %}" type="text/javascript" charset="utf-8"></script>
 <script src="{% static 'email_editor/js/ace/src-min/theme-monokai.js' %}" type="text/javascript" charset="utf-8"></script>
 <script>
-    let element = document.getElementById('htmlEditorDiv')
+  var aceEl = document.getElementById('htmlEditorDiv');
+  var editor = ace.edit(aceEl, {
+    mode: 'ace/mode/django',
+    theme: 'ace/theme/monokai',
+    wrap: true,
+    autoScrollEditorIntoView: true,
+    maxLines: Infinity,
+    minLines: 20,
+    fontSize: 14,
+    tabSize: 2,
+    useSoftTabs: true,
+    showPrintMargin: false,
+    enableBasicAutocompletion: true,
+    enableLiveAutocompletion: true,
+    enableSnippets: true,
+    scrollPastEnd: 0.5,
+  });
 
-    let editor = ace.edit(element, {
-        mode: 'ace/mode/django',
-        wrap: true,
-        autoScrollEditorIntoView: true,
-        maxLines: Infinity,
-        minLines: 10,
-        theme: 'ace/theme/monokai',
-        fontSize: 18,
-        enableBasicAutocompletion: true
-    })
+  var beautify = ace.require('ace/ext/beautify');
+  beautify.beautify(editor.session);
 
-    let beautify = ace.require("ace/ext/beautify");
-    beautify.beautify(editor.session);
+  editor.session.on('change', function () {
+    document.getElementById('htmlEditorValue').value = editor.getValue();
+  });
 
-    editor.session.on('change', function(delta) {
-        let hiddenInput = document.getElementById('htmlEditorValue')
-        hiddenInput.value = editor.getValue()
-    });
+{% verbatim %}
+  // ─── Django Template Tag Snippets ───────────────────────────────────────
+  (function () {
+    var snippetManager = ace.require('ace/snippets').snippetManager;
+    var raw = [
+      'snippet var\n\t{{ ${1:variable} }}',
+      'snippet for\n\t{% for ${1:item} in ${2:items} %}\n\t\t${3:$0}\n\t{% endfor %}',
+      'snippet forloop\n\t{% for ${1:item} in ${2:items} %}\n\t\t{{ forloop.counter }}\t{{ ${1:item} }}\n\t{% empty %}\n\t\t${3:No items.}\n\t{% endfor %}',
+      'snippet if\n\t{% if ${1:condition} %}\n\t\t${2:$0}\n\t{% endif %}',
+      'snippet ifelse\n\t{% if ${1:condition} %}\n\t\t${2}\n\t{% else %}\n\t\t${3:$0}\n\t{% endif %}',
+      'snippet ifelif\n\t{% if ${1:cond1} %}\n\t\t${2}\n\t{% elif ${3:cond2} %}\n\t\t${4:$0}\n\t{% endif %}',
+      'snippet with\n\t{% with ${1:alias}=${2:value} %}\n\t\t${3:$0}\n\t{% endwith %}',
+      'snippet block\n\t{% block ${1:name} %}\n\t\t${2:$0}\n\t{% endblock ${1:name} %}',
+      'snippet extends\n\t{% extends "${1:base.html}" %}',
+      'snippet include\n\t{% include "${1:partial.html}" %}',
+      'snippet load\n\t{% load ${1:static} %}',
+      'snippet static\n\t{% static "${1:path/to/file}" %}',
+      'snippet url\n\t{% url "${1:view-name}" %}',
+      'snippet trans\n\t{% trans "${1:text}" %}',
+      'snippet blocktrans\n\t{% blocktrans %}\n\t\t${1:$0}\n\t{% endblocktrans %}',
+      'snippet comment\n\t{% comment %}\n\t\t${1:$0}\n\t{% endcomment %}',
+      'snippet now\n\t{% now "${1:Y-m-d}" %}',
+      'snippet csrf\n\t{% csrf_token %}',
+    ].join('\n\n');
+    snippetManager.register(
+      snippetManager.parseSnippetFile(raw),
+      'django'
+    );
+  })();
+
+  // ─── Context Variable Completer ──────────────────────────────────────────
+  (function () {
+    var ctxEl = document.getElementById('editor-context-tree');
+    if (!ctxEl) return;
+    var ctxTree;
+    try { ctxTree = JSON.parse(ctxEl.textContent); } catch (e) { return; }
+
+    var paths = [];
+    (function flatten(obj, prefix, depth) {
+      if (!obj || typeof obj !== 'object' || Array.isArray(obj) || depth > 4) return;
+      Object.keys(obj).forEach(function (k) {
+        if (k.charAt(0) === '_') return;
+        var p = prefix ? prefix + '.' + k : k;
+        paths.push(p);
+        flatten(obj[k], p, depth + 1);
+      });
+    })(ctxTree, '', 0);
+
+    var completer = {
+      getCompletions: function (editor, session, pos, prefix, callback) {
+        var line = session.getLine(pos.row);
+        var before = line.substring(0, pos.column);
+        // Only trigger when cursor is inside {{ ... (no closing }})
+        var m = before.match(/\{\{\s*([\w.]*)$/);
+        if (!m) return callback(null, []);
+
+        var typed = m[1];                          // e.g. '' | 'user' | 'user.fi'
+        var lastDot = typed.lastIndexOf('.');
+        var pathBase = lastDot >= 0 ? typed.slice(0, lastDot + 1) : '';  // 'user.'
+
+        var completions = paths
+          .filter(function (p) { return p.startsWith(typed) && p !== typed; })
+          .map(function (p) {
+            // value replaces the Ace 'prefix' word (text after last word-boundary)
+            var insertValue = p.slice(pathBase.length) + ' }}';
+            return {
+              caption: '{{ ' + p + ' }}',
+              value: insertValue,
+              meta: 'ctx',
+              score: 2000,
+            };
+          });
+        callback(null, completions);
+      },
+    };
+
+    ace.require('ace/ext/language_tools').addCompleter(completer);
+  })();
+{% endverbatim %}
 </script>

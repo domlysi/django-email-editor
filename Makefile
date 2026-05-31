@@ -163,12 +163,9 @@ authors:
 #	$(PYTHON) setup.py register -r pypi
 
 dist: test
-	$(PYTHON) setup.py sdist
-	$(PYTHON) setup.py bdist_wheel
+	$(PYTHON) -m build
 
-upload: .git-no-changes register
-# $(PYTHON) setup.py sdist upload -r pypi
-# $(PYTHON) setup.py bdist_wheel upload -r pypi
+upload: .git-no-changes
 	$(PYTHON) -m twine upload dist/*
 
 
@@ -183,14 +180,10 @@ upload: .git-no-changes register
 	fi;
 
 ### System Installation ######################################################
-.PHONY: develop install download
-# Is this section really needed?
+.PHONY: develop download
 
 develop:
-	$(PYTHON) setup.py develop
-
-install:
-	$(PYTHON) setup.py install
+	$(PIP) install -e .
 
 download:
 	$(PIP) install $(PROJECT)

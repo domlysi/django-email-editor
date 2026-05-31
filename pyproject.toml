@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "django-email-editor"
+dynamic = ["version"]
+description = "A faster way to edit and preview templates."
+readme = {file = "README.md", content-type = "text/markdown"}
+license = {text = "MIT"}
+authors = [{name = "Dominik Lysiak", email = "dominik.lysiak@inquant.de"}]
+requires-python = ">=3.8"
+dependencies = ["django"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Web Environment",
+    "Framework :: Django",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Framework :: Django :: 4.2",
+    "Framework :: Django :: 5.0",
+    "Framework :: Django :: 5.1",
+    "Framework :: Django :: 5.2",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+[project.urls]
+Homepage = "https://github.com/domlysi/django-email-editor"
+
+[tool.setuptools.dynamic]
+version = {attr = "email_editor.__version__"}
+
+[tool.setuptools.packages.find]
+include = ["email_editor*"]
+
+[tool.setuptools.package-data]
+"email_editor" = [
+    "templates/**/*",
+    "static/email_editor/js/ace/**/*",
+    "static/email_editor/js/ckeditor5/build/**/*",
+    "static/email_editor/js/tinymce/**/*",
+]

@@ -1,0 +1,158 @@
+<!-- Subject: 📰 Your Monthly Digest — {{ newsletter.month }} {{ newsletter.year }} -->
+{% load i18n %}
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark">
+<style>
+@media only screen and (max-width: 600px) {
+  table.ee-outer { width: 100% !important; }
+  td.ee-col { display: block !important; width: 100% !important; max-width: 100% !important; padding: 0 0 20px 0 !important; box-sizing: border-box !important; border-right: none !important; }
+  td.ee-stat { display: block !important; width: 100% !important; border-left: none !important; border-right: none !important; border-bottom: 1px solid #333333 !important; }
+  td.ee-stat:last-child { border-bottom: none !important; }
+  table.ee-card { width: 100% !important; }
+  td.ee-card-wrap { padding-left: 20px !important; padding-right: 20px !important; }
+}
+@media (prefers-color-scheme: dark) {
+  body.ee-body, table.ee-bg { background-color: #1a1a2e !important; }
+  table.ee-card { background-color: #252535 !important; }
+  td.dm-intro-bar { background-color: #1e1e2e !important; }
+  td.dm-intro-bar p { color: #9aa0a6 !important; }
+  td.dm-intro-bar a { color: #78aff5 !important; }
+  td.dm-lead h2 { color: #e8eaed !important; }
+  td.dm-lead p { color: #c8cacd !important; }
+  td.dm-lead a { color: #e8eaed !important; border-bottom-color: #e8eaed !important; }
+  hr.dm-divider { border-top-color: #3c3c4c !important; }
+  h3.dm-heading { color: #e8eaed !important; }
+  p.dm-text { color: #c8cacd !important; }
+  a.dm-link { color: #78aff5 !important; }
+  td.dm-footer { background-color: #1e1e2e !important; border-top-color: #3c3c4c !important; }
+  td.dm-footer p { color: #9aa0a6 !important; }
+  td.dm-footer a { color: #78aff5 !important; }
+}
+</style>
+</head>
+<body class="ee-body" style="margin:0;padding:0;background-color:#f4f4f4;font-family:Georgia,serif;">
+
+<table class="ee-bg" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f4f4f4;">
+  <tr>
+    <td align="center" style="padding:32px 10px;">
+
+      <table class="ee-card" width="620" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff;border-radius:4px;overflow:hidden;">
+
+        <!-- Header -->
+        <tr>
+          <td style="background:#111111;padding:28px 40px;text-align:center;">
+            <p style="margin:0;font-size:11px;color:#888888;text-transform:uppercase;letter-spacing:2px;font-family:Arial,sans-serif;">Monthly Digest</p>
+            <h1 style="margin:6px 0 0;color:#ffffff;font-size:30px;font-weight:700;font-family:Georgia,serif;">{{ newsletter.month|default:"May" }} {{ newsletter.year|default:"2026" }}</h1>
+          </td>
+        </tr>
+
+        <!-- Intro bar -->
+        <tr>
+          <td class="dm-intro-bar" style="background:#f9f9f9;padding:14px 40px;border-bottom:3px solid #111111;">
+            <p style="margin:0;font-size:13px;color:#555555;font-family:Arial,sans-serif;line-height:1.5;">
+              Hello {{ user.first_name|default:user.username }}, here's what happened this month.
+              <span style="float:right;"><a href="#" style="font-size:12px;color:#1a73e8;text-decoration:none;font-family:Arial,sans-serif;">View in browser</a></span>
+            </p>
+          </td>
+        </tr>
+
+        <!-- Lead story -->
+        <tr>
+          <td class="dm-lead" style="padding:36px 40px 24px;">
+            <p style="margin:0 0 6px;font-size:11px;color:#888888;text-transform:uppercase;letter-spacing:1.5px;font-family:Arial,sans-serif;">Featured</p>
+            <h2 style="margin:0 0 14px;font-size:22px;color:#111111;line-height:1.3;font-family:Georgia,serif;">{{ newsletter.lead.title|default:"New Features That Will Change How You Work" }}</h2>
+            <p style="margin:0 0 16px;font-size:15px;color:#444444;line-height:1.7;font-family:Arial,sans-serif;">
+              {{ newsletter.lead.excerpt|default:"This month we shipped a complete redesign of the dashboard, new keyboard shortcuts, and a powerful batch processing mode. Here's everything you need to know to take advantage of these improvements right away." }}
+            </p>
+            <a href="{{ newsletter.lead.url|default:'#' }}" style="font-size:14px;color:#111111;font-weight:700;text-decoration:none;border-bottom:2px solid #111111;font-family:Arial,sans-serif;">Read full story →</a>
+          </td>
+        </tr>
+
+        <!-- Divider -->
+        <tr><td style="padding:0 40px;"><hr class="dm-divider" style="border:none;border-top:1px solid #e8e8e8;margin:0;"></td></tr>
+
+        <!-- 3-column article grid -->
+        <tr>
+          <td style="padding:28px 40px;">
+            <p style="margin:0 0 18px;font-size:11px;color:#888888;text-transform:uppercase;letter-spacing:1.5px;font-family:Arial,sans-serif;">More Stories</p>
+            <table class="ee-outer" width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                {% for article in newsletter.articles %}
+                {% if forloop.counter <= 3 %}
+                <td class="ee-col" width="33%" style="padding:0 {% if not forloop.last %}12px 0 0{% else %}0{% endif %};vertical-align:top;">
+                  <p style="margin:0 0 6px;font-size:10px;color:#888888;text-transform:uppercase;letter-spacing:1px;font-family:Arial,sans-serif;">{{ article.category|default:"Update" }}</p>
+                  <h3 class="dm-heading" style="margin:0 0 8px;font-size:15px;color:#111111;line-height:1.3;font-family:Georgia,serif;">{{ article.title }}</h3>
+                  <p class="dm-text" style="margin:0 0 10px;font-size:12px;color:#666666;line-height:1.5;font-family:Arial,sans-serif;">{{ article.excerpt }}</p>
+                  <a class="dm-link" href="{{ article.url|default:'#' }}" style="font-size:12px;color:#1a73e8;text-decoration:none;font-family:Arial,sans-serif;">Read more</a>
+                </td>
+                {% endif %}
+                {% empty %}
+                <td class="ee-col" style="vertical-align:top;padding:0 12px 0 0;" width="33%">
+                  <p style="margin:0 0 6px;font-size:10px;color:#888888;text-transform:uppercase;letter-spacing:1px;font-family:Arial,sans-serif;">Performance</p>
+                  <h3 class="dm-heading" style="margin:0 0 8px;font-size:15px;color:#111111;line-height:1.3;font-family:Georgia,serif;">2× Faster Exports</h3>
+                  <p class="dm-text" style="margin:0 0 10px;font-size:12px;color:#666666;line-height:1.5;font-family:Arial,sans-serif;">Our export pipeline got a full rewrite. Large datasets now export in half the time.</p>
+                  <a class="dm-link" href="#" style="font-size:12px;color:#1a73e8;text-decoration:none;font-family:Arial,sans-serif;">Read more</a>
+                </td>
+                <td class="ee-col" style="vertical-align:top;padding:0 12px;" width="33%">
+                  <p style="margin:0 0 6px;font-size:10px;color:#888888;text-transform:uppercase;letter-spacing:1px;font-family:Arial,sans-serif;">Integrations</p>
+                  <h3 class="dm-heading" style="margin:0 0 8px;font-size:15px;color:#111111;line-height:1.3;font-family:Georgia,serif;">Slack &amp; Zapier Now Live</h3>
+                  <p class="dm-text" style="margin:0 0 10px;font-size:12px;color:#666666;line-height:1.5;font-family:Arial,sans-serif;">Connect your workspace to 1000+ apps with our new native integrations.</p>
+                  <a class="dm-link" href="#" style="font-size:12px;color:#1a73e8;text-decoration:none;font-family:Arial,sans-serif;">Read more</a>
+                </td>
+                <td class="ee-col" style="vertical-align:top;padding:0 0 0 12px;" width="33%">
+                  <p style="margin:0 0 6px;font-size:10px;color:#888888;text-transform:uppercase;letter-spacing:1px;font-family:Arial,sans-serif;">Tips</p>
+                  <h3 class="dm-heading" style="margin:0 0 8px;font-size:15px;color:#111111;line-height:1.3;font-family:Georgia,serif;">5 Keyboard Shortcuts to Save Hours</h3>
+                  <p class="dm-text" style="margin:0 0 10px;font-size:12px;color:#666666;line-height:1.5;font-family:Arial,sans-serif;">Power users share their favourite time-saving shortcuts.</p>
+                  <a href="#" style="font-size:12px;color:#1a73e8;text-decoration:none;font-family:Arial,sans-serif;">Read more</a>
+                </td>
+                {% endfor %}
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Stats banner -->
+        <tr>
+          <td style="padding:0 40px 32px;">
+            <table class="ee-outer" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#111111;border-radius:6px;">
+              <tr>
+                <td class="ee-stat" style="padding:24px 0;text-align:center;" width="33%">
+                  <p style="margin:0;font-size:28px;font-weight:700;color:#ffffff;font-family:Arial,sans-serif;">{{ stats.users|default:"12,840" }}</p>
+                  <p style="margin:4px 0 0;font-size:11px;color:#888888;text-transform:uppercase;letter-spacing:1px;font-family:Arial,sans-serif;">Active Users</p>
+                </td>
+                <td class="ee-stat" style="padding:24px 0;text-align:center;border-left:1px solid #333333;border-right:1px solid #333333;" width="33%">
+                  <p style="margin:0;font-size:28px;font-weight:700;color:#ffffff;font-family:Arial,sans-serif;">{{ stats.requests|default:"4.2M" }}</p>
+                  <p style="margin:4px 0 0;font-size:11px;color:#888888;text-transform:uppercase;letter-spacing:1px;font-family:Arial,sans-serif;">API Requests</p>
+                </td>
+                <td class="ee-stat" style="padding:24px 0;text-align:center;" width="33%">
+                  <p style="margin:0;font-size:28px;font-weight:700;color:#44cc88;font-family:Arial,sans-serif;">{{ stats.uptime|default:"99.98%" }}</p>
+                  <p style="margin:4px 0 0;font-size:11px;color:#888888;text-transform:uppercase;letter-spacing:1px;font-family:Arial,sans-serif;">Uptime</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td class="dm-footer" style="background:#f9f9f9;padding:20px 40px;text-align:center;border-top:1px solid #e0e0e0;">
+            <p style="margin:0;font-size:11px;color:#888888;font-family:Arial,sans-serif;line-height:1.8;">
+              You're receiving this because you subscribed to our newsletter.<br>
+              <a href="#" style="color:#1a73e8;text-decoration:none;">Unsubscribe</a> · <a href="#" style="color:#1a73e8;text-decoration:none;">Manage Preferences</a> · <a href="#" style="color:#1a73e8;text-decoration:none;">Privacy</a><br>
+              © 2026 Example App
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+
+</body>
+</html>

@@ -1,118 +1,910 @@
+{% extends "admin/base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset=UTF-8>
-  <title>Edit Template</title>
-  <style>
-    .c-wrapper {
-      display: grid;
-      grid-template-columns: 50% 50%;
-      column-gap: 20px;
-    }
 
-    .btn {
-      padding: 0.25rem 0.5rem;
-      font-size: 1.25rem;
-    }
-  </style>
-</head>
-<body>
+{% block title %}Email Template Editor | {{ site_title|default:"Django" }}{% endblock %}
 
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">Home</a>
+  &rsaquo; Email Template Editor
+  {% if current_template %}&rsaquo; {{ current_template.label }}{% endif %}
+</div>
+{% endblock %}
+
+{% block content_title %}<h1>Email Template Editor</h1>{% endblock %}
+
+{% block nav-sidebar %}{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  .ee-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  .ee-toolbar form { display: flex; align-items: center; gap: 0.25rem; }
+  .ee-toolbar select { font-size: 0.8125rem; }
+
+  .email-editor-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    align-items: start;
+  }
+  .email-editor-grid .module { margin-top: 0; }
+  .email-editor-grid > * { min-width: 0; }
+  .email-editor-grid--preview-only { grid-template-columns: 1fr; }
+  #htmlEditorDiv, #htmlEditor { width: 100%; min-height: 300px; box-sizing: border-box; }
+  #htmlEditor { font-family: monospace; font-size: 0.875rem; }
+
+  /*
+   * Hard reset that stops Django admin's global CSS from cascading into
+   * the editor chrome (button colours, list styles, font overrides, etc.).
+   * all:initial resets every inherited property on this element so children
+   * inherit browser-default values instead of admin values; the editors'
+   * own bundled CSS then takes over cleanly from there.
+   * CSS custom properties are NOT affected by all:initial (spec-correct),
+   * so --tox-* / --ck-* variables still work fine.
+   */
+  .editor-isolation {
+    all: initial;
+    display: block;
+    width: 100%;
+  }
+  /* Prevent admin rules (e.g. `p,ol,ul,dl` margins and `input,textarea` padding)
+     from bleeding into the editor's own elements. `revert` steps back to the
+     browser UA stylesheet; the editor's own more-specific CSS then wins cleanly. */
+  .editor-isolation p,
+  .editor-isolation h1, .editor-isolation h2, .editor-isolation h3,
+  .editor-isolation h4, .editor-isolation h5, .editor-isolation h6,
+  .editor-isolation ol, .editor-isolation ul, .editor-isolation dl,
+  .editor-isolation li {
+    margin: revert;
+    padding: revert;
+    list-style: revert;
+    background: revert;
+    color: revert;
+    border: revert;
+    font: revert;
+  }
+  .editor-isolation input,
+  .editor-isolation textarea,
+  .editor-isolation select {
+    margin: revert;
+    padding: revert;
+    vertical-align: revert;
+    font-family: revert;
+    font-weight: revert;
+    font-size: revert;
+    border: revert;
+    background: revert;
+    color: revert;
+    border-radius: revert;
+    box-sizing: revert;
+  }
+  .editor-isolation button {
+    all: revert;
+  }
+  .editor-isolation a {
+    color: revert;
+    text-decoration: revert;
+  }
+  #contentHtml { background: #fff; border: 1px solid #ddd; padding: 1rem; overflow: auto; }
+
+  @media (max-width: 767px) {
+    .email-editor-grid { grid-template-columns: 1fr; }
+    .ee-toolbar { flex-direction: column; align-items: flex-start; }
+  }
+
+  dialog {
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 0;
+      width: min(480px, 90vw);
+      max-height: 70vh;
+    }
+    dialog[open] {
+      display: flex;
+      flex-direction: column;
+    }
+    dialog::backdrop { background: rgba(0,0,0,0.35); }
+    .tpl-picker-header {
+      display: flex;
+      gap: 0.5rem;
+      padding: 0.6rem 0.75rem;
+      border-bottom: 1px solid #ddd;
+      background: #f8f8f8;
+      align-items: center;
+    }
+    #tpl-search {
+      flex: 1;
+      padding: 0.3rem 0.5rem;
+      font-size: 1rem;
+      border: 1px solid #aaa;
+      border-radius: 3px;
+    }
+    .tpl-picker-body { overflow-y: auto; padding: 0.25rem; }
+    .tpl-picker-body ul { list-style: none; margin: 0; padding: 0; }
+    .tpl-picker-body li a {
+      display: block;
+      padding: 0.35rem 0.6rem;
+      text-decoration: none;
+      color: #333;
+      border-radius: 3px;
+    }
+    .tpl-picker-body li a:hover { background: #e8f0f8; color: #003d6b; }
+    .tpl-picker-body li.tpl-active a { font-weight: bold; background: #e8f0f8; }
+    .tpl-picker-body details > summary {
+      cursor: pointer;
+      padding: 0.4rem 0.5rem;
+      font-weight: bold;
+      color: #417690;
+      user-select: none;
+      list-style: none;
+    }
+    .tpl-picker-body details > summary::-webkit-details-marker { display: none; }
+    .tpl-picker-body details > summary::before { content: '\25B6\A0'; font-size: 0.7em; }
+    .tpl-picker-body details[open] > summary::before { content: '\25BC\A0'; }
+
+  /* ── Preview panel enhancements ── */
+  .preview-module { display: flex; flex-direction: column; }
+  .preview-toolbar {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.4rem 0.75rem; background: #f3f3f3;
+    border-bottom: 1px solid #ddd; flex-wrap: wrap; flex-shrink: 0;
+  }
+  .preview-device-btns { display: flex; gap: 2px; }
+  .preview-device-btn {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: none; border: 1px solid #ccc; padding: 3px 9px;
+    cursor: pointer; border-radius: 3px; font-size: 0.78rem;
+    color: #444; line-height: 1.5; white-space: nowrap;
+  }
+  .preview-device-btn:hover { background: #e4e4e4; }
+  .preview-device-btn.active { background: #417690; color: #fff; border-color: #2d5266; }
+  .preview-dim-sep { color: #ccc; }
+  .preview-dim-inputs { display: flex; align-items: center; gap: 3px; font-size: 0.78rem; color: #555; }
+  .preview-dim-inputs input[type=number] {
+    width: 56px; padding: 2px 4px; border: 1px solid #ccc;
+    border-radius: 3px; font-size: 0.78rem; text-align: center;
+    -moz-appearance: textfield;
+  }
+  .preview-dim-inputs input[type=number]::-webkit-outer-spin-button,
+  .preview-dim-inputs input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .preview-rotate-btn {
+    background: none; border: 1px solid #ccc; padding: 2px 5px;
+    cursor: pointer; border-radius: 3px; color: #555; line-height: 1;
+    display: inline-flex; align-items: center;
+  }
+  .preview-rotate-btn:hover { background: #e4e4e4; }
+  .preview-fs-btn {
+    margin-left: auto; background: none; border: 1px solid #ccc;
+    padding: 4px 7px; cursor: pointer; border-radius: 3px;
+    color: #555; display: inline-flex; align-items: center;
+  }
+  .preview-fs-btn:hover { background: #e4e4e4; }
+  .preview-viewport {
+    flex: 1; min-height: 400px; overflow: auto;
+    background: #d0d0d0; display: flex;
+    align-items: flex-start; justify-content: flex-start; padding: 12px;
+  }
+  .preview-frame-wrapper {
+    background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,0.22);
+    flex-shrink: 0; overflow: hidden;
+    transform-origin: top left;
+    transition: transform 0.12s ease;
+  }
+  #preview-scale-container { flex-shrink: 0; overflow: hidden; }
+  #preview-iframe { display: block; border: none; width: 100%; height: 100%; }
+  #preview-zoom-select {
+    padding: 2px 6px; border: 1px solid #ccc; border-radius: 3px;
+    font-size: 0.78rem; color: #444; background: #fff; cursor: pointer;
+    height: 26px;
+  }
+  #preview-scale-badge {
+    font-size: 0.72rem; color: #777; min-width: 36px;
+    text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums;
+  }
+  .preview-icon-btn {
+    background: none; border: 1px solid #ccc; padding: 4px 7px;
+    cursor: pointer; border-radius: 3px; color: #555;
+    display: inline-flex; align-items: center;
+  }
+  .preview-icon-btn:hover { background: #e4e4e4; }
+  .preview-icon-btn.active { background: #417690; color: #fff; border-color: #2d5266; }
+  [hidden] { display: none !important; }
+  /* Fullscreen */
+  #preview-module:fullscreen,
+  #preview-module:-webkit-full-screen,
+  #preview-module:-moz-full-screen {
+    display: flex; flex-direction: column;
+    overflow: hidden; background: #fff;
+  }
+  #preview-module:fullscreen .preview-viewport,
+  #preview-module:-webkit-full-screen .preview-viewport,
+  #preview-module:-moz-full-screen .preview-viewport { flex: 1; min-height: 0; }
+
+  /* ── CKEditor5 variable panel ── */
+  .ck-var-panel {
+    display: flex; flex-wrap: wrap; align-items: center;
+    gap: 0.35rem; padding: 0.4rem 0.6rem;
+    background: #f7f7f7; border-top: 1px solid #ddd;
+    border-bottom-left-radius: 3px; border-bottom-right-radius: 3px;
+  }
+  .ck-var-label { font-size: 0.78rem; color: #555; white-space: nowrap; margin-right: 0.2rem; }
+  .ck-var-chip {
+    display: inline-block; background: #e3f2fd;
+    border: 1px solid #90caf9; border-radius: 3px;
+    padding: 2px 7px; font-size: 0.78rem; font-family: monospace;
+    color: #1565c0; cursor: pointer; line-height: 1.5;
+    transition: background 0.1s;
+  }
+  .ck-var-chip:hover { background: #bbdefb; border-color: #64b5f6; }
+
+  /* ── Dark mode overrides ── */
+  html[data-theme="dark"] .ck-var-panel {
+    background: #1e1e2e; border-top-color: #333;
+  }
+  html[data-theme="dark"] .ck-var-label { color: #aaa; }
+  html[data-theme="dark"] .ck-var-chip {
+    background: #0d2a45; border-color: #1565c0; color: #90caf9;
+  }
+  html[data-theme="dark"] .ck-var-chip:hover {
+    background: #1565c0; border-color: #42a5f5; color: #fff;
+  }
+
+  /* ── CKEditor5 content area dark mode ── */
+  html[data-theme="dark"] .ck.ck-editor__main>.ck-editor__editable {
+    background: #222f3e !important; color: #fff;
+  }
+  html[data-theme="dark"] .ck.ck-editor__main>.ck-editor__editable:not(.ck-focused) {
+    border-color: #444 !important;
+  }
+
+  /* ── Ace editor wrapper dark mode ── */
+  html[data-theme="dark"] #htmlEditorDiv {
+    background: #222f3e;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
 {% for err in errors %}
-  <div style="background-color: red; color: white; border-radius: 5px; padding: 0.5rem; margin: 1rem 0">
-    {{ err }}
-  </div>
+  <p class="errornote">{{ err }}</p>
 {% endfor %}
 
-<div>
+<div class="ee-toolbar">
+  <button type="button" class="button" onclick="openTplPicker()">
+    {% if current_template %}{{ current_template.label }}{% else %}&mdash; Select template &mdash;{% endif %} &#9660;
+  </button>
+  {% if request.resolver_match.kwargs.preview_cls %}
   <form action="" method="get">
-    <div style="margin-bottom: 1rem">
-      <select name="preview_cls" class="btn">
-        {% for cls in preview_cls_list %}
-          <option {% if cls|first == request.GET.preview_cls %}selected {% endif %}value="{{ cls|first }}">{{ cls|first}}</option>
-          {% empty %}
-          <option disabled selected> --- No defined --- </option>
-        {% endfor %}
-      </select>
-      <input type="submit" value="Load Template" class="btn">
-    </div>
+    <select name="editor">
+      {% for e in editor_list %}
+        <option {% if editor_type == e %}selected{% endif %} value="{{ e }}">{{ e }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="button">Load Editor</button>
   </form>
+  {% endif %}
 </div>
 
-{% if request.resolver_match.kwargs.preview_cls %}
-  <div>
-    <form action="" method="get">
-      <div style="margin-bottom: 1rem">
-        <select name="editor" class="btn">
-          {% for e in editor_list %}
-            <option {% if editor_type == e %} selected {% endif %}value="{{ e }}">{{ e }}</option>
-            {% empty %}
-            <option disabled selected> --- No defined --- </option>
-          {% endfor %}
-        </select>
-        <input type="submit" value="Load Editor" class="btn">
-      </div>
-    </form>
+<dialog id="tpl-picker">
+  <div class="tpl-picker-header">
+    <input type="search" id="tpl-search" placeholder="Search templates&#8230;" autofocus oninput="filterTpl(this.value)">
+    <button type="button" class="btn" onclick="document.getElementById('tpl-picker').close()">&#10005;</button>
   </div>
-{% endif %}
+  <div class="tpl-picker-body">
+    {% if not preview_cls_list %}
+      <p style="padding: 1rem; color: #666;">No templates defined.</p>
+    {% elif show_categories %}
+      {% for category, templates in preview_cls_grouped.items %}
+        <details open>
+          <summary>{{ category }}</summary>
+          <ul>
+            {% for tpl in templates %}
+              <li data-label="{{ tpl.label|lower }}"{% if tpl.key == current_key %} class="tpl-active"{% endif %}>
+                <a href="{% url 'preview-template' tpl.key %}">{{ tpl.label }}</a>
+              </li>
+            {% endfor %}
+          </ul>
+        </details>
+      {% endfor %}
+    {% else %}
+      <ul>
+        {% for tpl in preview_cls_list %}
+          <li data-label="{{ tpl.label|lower }}"{% if tpl.key == current_key %} class="tpl-active"{% endif %}>
+            <a href="{% url 'preview-template' tpl.key %}">{{ tpl.label }}</a>
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </div>
+</dialog>
 
 {% if language != None %}
-  <h3>Language: {{ language }}</h3>
+  <p><strong>Language:</strong> {{ language }}</p>
 {% endif %}
 
-<div class="c-wrapper">
+<div class="email-editor-grid{% if raw == None %} email-editor-grid--preview-only{% endif %}">
   {% if raw != None %}
-    <div style="">
+    <div class="module">
+      <h2>Editor</h2>
       <form action="{{ request.get_full_path }}" method="post">
         {% csrf_token %}
-        {% if editor_type in 'ace' %}
+        {% if editor_type == 'ace' %}
           <div style="width: 100%" id="htmlEditorDiv">{{ raw }}</div>
           <input id="htmlEditorValue" type="hidden" value="{{ raw }}" name="content" />
         {% else %}
-          <textarea style="" id="htmlEditor" name="content">{{ raw|safe }}</textarea>
+          <div class="editor-isolation">
+            <textarea id="htmlEditor" name="content">{{ raw }}</textarea>
+          </div>
         {% endif %}
-        <button style="margin-top: 1rem" name="save" type="submit" class="btn">Save</button>
+        <div class="submit-row">
+          <input type="submit" value="Save" class="default" name="save">
+        </div>
       </form>
     </div>
   {% endif %}
 
-  <div>
-    {% if subject != None %}
-      <div><h3>Subject: {{ subject }}</h3></div>
-    {% endif %}
-
-    {% if html != None%}
-      <fieldset style="margin: 0.15rem; padding:0; border: 1px dotted black; background-color: white" id="contentHtml">
-        <legend>Preview</legend>
-        {{ html|safe }}
-      </fieldset>
+  <div class="module preview-module" id="preview-module">
+    <h2>Preview{% if subject %} &mdash; {{ subject }}{% endif %}</h2>
+    {% if html != None %}
+    <div class="preview-toolbar">
+      <div class="preview-device-btns">
+        <button class="preview-device-btn active" data-device="desktop" title="Desktop (1920&#xD7;600)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        </button>
+        <button class="preview-device-btn" data-device="tablet" title="Tablet (768&#xD7;1024)">
+          <svg width="13" height="15" viewBox="0 0 20 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="1" width="18" height="22" rx="2"/><circle cx="10" cy="19" r="1"/></svg>
+        </button>
+        <button class="preview-device-btn" data-device="mobile" title="Mobile (375&#xD7;667)">
+          <svg width="10" height="15" viewBox="0 0 16 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="1" width="14" height="22" rx="2"/><circle cx="8" cy="19" r="1"/></svg>
+        </button>
+      </div>
+      <span class="preview-dim-sep">|</span>
+      <div class="preview-dim-inputs">
+        <input type="number" id="preview-w" min="100" max="3840" placeholder="W" title="Preview width in px (blank = fill)">
+        <span>&times;</span>
+        <input type="number" id="preview-h" min="100" max="4096" value="600" placeholder="auto" title="Preview height in px (blank = auto-fit to content)">
+        <button class="preview-rotate-btn" id="preview-rotate" title="Swap width &amp; height">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 16V4m0 0L3 8m4-4 4 4"/><path d="M17 8v12m0 0 4-4m-4 4-4-4"/></svg>
+        </button>
+        <span>px</span>
+      </div>
+      <select id="preview-zoom-select" title="Zoom level">
+        <option value="fit" selected>Fit</option>
+        <option value="25">25%</option>
+        <option value="33">33%</option>
+        <option value="50">50%</option>
+        <option value="67">67%</option>
+        <option value="75">75%</option>
+        <option value="100">100%</option>
+        <option value="125">125%</option>
+        <option value="150">150%</option>
+      </select>
+      <span id="preview-scale-badge" aria-live="polite"></span>
+      <button class="preview-icon-btn" id="preview-refresh-btn" title="Refresh preview">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      </button>
+      <button class="preview-icon-btn" id="preview-dark-btn" title="Toggle dark mode">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <button class="preview-icon-btn" id="preview-newtab-btn" title="Open in new tab"{% if raw_url %} data-raw-url="{{ raw_url }}"{% endif %}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      </button>
+      <button class="preview-fs-btn" id="preview-fs-btn" title="Enter fullscreen">
+        <svg class="fs-icon-expand" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+        <svg class="fs-icon-compress" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>
+      </button>
+    </div>
+    <div class="preview-viewport" id="preview-viewport">
+      <div id="preview-scale-container">
+        <div class="preview-frame-wrapper" id="preview-frame-wrapper" style="width:1920px;height:600px">
+          <iframe
+            id="preview-iframe"
+            title="Email preview"
+            sandbox="allow-popups allow-popups-to-escape-sandbox"
+          ></iframe>
+        </div>
+      </div>
+    </div>
+    {{ html|json_script:"email-html-data" }}
+    {% else %}
+      <p style="color:#666;padding:0.5rem">No preview available.</p>
     {% endif %}
   </div>
 </div>
 
 {% if context_tree %}
-  <div style="margin: 1rem 0">
-    <pre>{{ context_tree|pprint }}</pre>
+  {{ context_tree|json_script:"editor-context-tree" }}
+  <div class="module" style="margin-top:1rem">
+    <h2>Template Context</h2>
+    <pre style="overflow:auto;padding:0.5rem">{{ context_tree|pprint }}</pre>
   </div>
 {% endif %}
+{% endblock %}
+
+{% block footer %}
+{{ block.super }}
+<script>
+  function openTplPicker() {
+    document.getElementById('tpl-search').value = '';
+    filterTpl('');
+    document.getElementById('tpl-picker').showModal();
+  }
+  function filterTpl(q) {
+    q = q.toLowerCase().trim();
+    document.querySelectorAll('#tpl-picker li').forEach(function(li) {
+      li.hidden = q !== '' && !li.dataset.label.includes(q);
+    });
+    document.querySelectorAll('#tpl-picker details').forEach(function(d) {
+      var any = Array.from(d.querySelectorAll('li')).some(function(li) { return !li.hidden; });
+      d.hidden = !any;
+      if (q) d.open = any;
+    });
+  }
+</script>
+
+<script>
+(function () {
+  var iframe = document.getElementById('preview-iframe');
+  var tpl = document.getElementById('email-html-data');
+  if (!iframe || !tpl) return;
+
+  var wrapper       = document.getElementById('preview-frame-wrapper');
+  var scaleContainer= document.getElementById('preview-scale-container');
+  var viewport      = document.getElementById('preview-viewport');
+  var wInput  = document.getElementById('preview-w');
+  var hInput  = document.getElementById('preview-h');
+  var rotBtn  = document.getElementById('preview-rotate');
+  var fsBtn   = document.getElementById('preview-fs-btn');
+  var zoomSelect  = document.getElementById('preview-zoom-select');
+  var scaleBadge   = document.getElementById('preview-scale-badge');
+  var darkBtn      = document.getElementById('preview-dark-btn');
+  var refreshBtn   = document.getElementById('preview-refresh-btn');
+  var newTabBtn    = document.getElementById('preview-newtab-btn');
+  var module       = document.getElementById('preview-module');
+  var deviceBtns   = document.querySelectorAll('.preview-device-btn');
+
+  var darkMode = false;
+  var emailHtml = JSON.parse(tpl.textContent); // original HTML, kept for re-injection
+
+  // --- Dark mode injection ---
+  var DARK_STYLE = '<style>html,body{background:#1a1a1a!important;color:#e0e0e0!important}' +
+    'table,td,th{background:#1a1a1a!important;color:#e0e0e0!important}' +
+    'a{color:#7eb8f7!important}</style>';
+
+  function buildSrcdoc() {
+    return darkMode ? emailHtml + DARK_STYLE : emailHtml;
+  }
+
+  function applyDark() {
+    iframe.srcdoc = buildSrcdoc();
+    darkBtn.classList.toggle('active', darkMode);
+    darkBtn.title = darkMode ? 'Switch to light mode' : 'Toggle dark mode';
+    // Also tint the wrapper background
+    wrapper.style.background = darkMode ? '#1a1a1a' : '#fff';
+  }
+
+  var PRESETS = {
+    desktop: { w: 1920, h: 1080 },
+    tablet:  { w: 768,  h: 1024 },
+    mobile:  { w: 375,  h: 667 }
+  };
+
+  // --- Auto-height ---
+  var autoHeight = false;
+  function fitIframeHeight() {
+    if (!autoHeight) return;
+    try {
+      var doc = iframe.contentDocument || (iframe.contentWindow && iframe.contentWindow.document);
+      var ch = doc && (doc.documentElement.scrollHeight || (doc.body && doc.body.scrollHeight));
+      if (ch && ch > 0) { wrapper.style.height = ch + 'px'; applyScale(); }
+    } catch (e) { /* cross-origin guard */ }
+  }
+  iframe.addEventListener('load', fitIframeHeight);
+
+  // --- Scaling ---
+  // zoomSelect.value is either 'fit' or a numeric string (percent)
+  function applyScale() {
+    var ww = parseInt(wrapper.style.width)  || wrapper.offsetWidth;
+    var wh = parseInt(wrapper.style.height) || wrapper.offsetHeight;
+    if (!ww) return;
+    var scale;
+    if (zoomSelect.value === 'fit') {
+      var pad = 24; // 2 × 12px viewport padding
+      var vw = viewport.clientWidth  - pad;
+      var vh = viewport.clientHeight - pad;
+      scale = Math.min(1, vw / ww, vh / wh);
+      viewport.style.overflow = 'hidden';
+    } else {
+      scale = parseInt(zoomSelect.value, 10) / 100;
+      viewport.style.overflow = scale > 1 ? 'auto' : 'hidden';
+    }
+    wrapper.style.transform = scale === 1 ? '' : 'scale(' + scale + ')';
+    scaleContainer.style.width  = Math.round(ww * scale) + 'px';
+    scaleContainer.style.height = Math.round(wh * scale) + 'px';
+    scaleBadge.textContent = Math.round(scale * 100) + '%';
+  }
+
+  // Recompute scale when viewport resizes (e.g. window resize, fullscreen)
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(function () { applyScale(); }).observe(viewport);
+  }
+
+  function applySize(w, h) {
+    wrapper.style.width = (w === null || w === '') ? '100%' : (parseInt(w, 10) + 'px');
+    if (h === null || h === '') {
+      autoHeight = true;
+      // Size immediately from current content if already loaded, else wait for load event
+      var doc = iframe.contentDocument || (iframe.contentWindow && iframe.contentWindow.document);
+      var ch = doc && (doc.documentElement.scrollHeight || (doc.body && doc.body.scrollHeight));
+      wrapper.style.height = (ch && ch > 0) ? (ch + 'px') : '600px';
+    } else {
+      autoHeight = false;
+      wrapper.style.height = parseInt(h, 10) + 'px';
+    }
+    applyScale();
+  }
+
+  function setDevice(name) {
+    var p = PRESETS[name];
+    deviceBtns.forEach(function (b) { b.classList.toggle('active', b.dataset.device === name); });
+    wInput.value = p.w !== null ? p.w : '';
+    hInput.value = p.h !== null ? p.h : '';
+    applySize(p.w, p.h);
+  }
+
+  deviceBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () { setDevice(btn.dataset.device); });
+  });
+
+  function onDimChange() {
+    deviceBtns.forEach(function (b) { b.classList.remove('active'); });
+    applySize(wInput.value, hInput.value);
+  }
+  wInput.addEventListener('change', onDimChange);
+  hInput.addEventListener('change', onDimChange);
+  wInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); onDimChange(); } });
+  hInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); onDimChange(); } });
+
+  // Rotate (swap W ↔ H)
+  rotBtn.addEventListener('click', function () {
+    var tmp = wInput.value;
+    wInput.value = hInput.value;
+    hInput.value = tmp;
+    deviceBtns.forEach(function (b) { b.classList.remove('active'); });
+    applySize(wInput.value, hInput.value);
+  });
+
+  zoomSelect.addEventListener('change', applyScale);
+
+  // Refresh preview
+  refreshBtn.addEventListener('click', function () {
+    iframe.srcdoc = '';
+    setTimeout(function () { iframe.srcdoc = buildSrcdoc(); }, 0);
+  });
+
+  // Dark mode toggle
+  darkBtn.addEventListener('click', function () {
+    darkMode = !darkMode;
+    applyDark();
+  });
+
+  // Open in new tab
+  newTabBtn.addEventListener('click', function () {
+    var rawUrl = newTabBtn.dataset.rawUrl;
+    if (rawUrl) {
+      window.open(rawUrl, '_blank', 'noopener,noreferrer');
+    } else {
+      // fallback: blob URL (no preview_cls in context)
+      var blob = new Blob([buildSrcdoc()], { type: 'text/html' });
+      var url = URL.createObjectURL(blob);
+      window.open(url, '_blank', 'noopener,noreferrer');
+      setTimeout(function () { URL.revokeObjectURL(url); }, 10000);
+    }
+  });
+
+  // Init srcdoc
+  iframe.srcdoc = buildSrcdoc();
+  function toggleFullscreen() {
+    var fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+    if (!fsEl) {
+      var req = module.requestFullscreen || module.webkitRequestFullscreen;
+      if (req) req.call(module);
+    } else {
+      var exit = document.exitFullscreen || document.webkitExitFullscreen;
+      if (exit) exit.call(document);
+    }
+  }
+
+  function onFsChange() {
+    var isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+    fsBtn.title = isFs ? 'Exit fullscreen' : 'Enter fullscreen';
+    fsBtn.querySelector('.fs-icon-expand').hidden  = isFs;
+    fsBtn.querySelector('.fs-icon-compress').hidden = !isFs;
+    // Recompute scale after fullscreen transition settles
+    setTimeout(applyScale, 120);
+  }
+
+  fsBtn.addEventListener('click', toggleFullscreen);
+  document.addEventListener('fullscreenchange', onFsChange);
+  document.addEventListener('webkitfullscreenchange', onFsChange);
+
+  // Init: apply desktop preset (also sets srcdoc via applyDark inside setDevice→applySize)
+  iframe.srcdoc = buildSrcdoc();
+  setDevice('desktop');
+})();
+</script>
 
 {% if editor_type == 'tinymce' %}
   <script src="{% static 'email_editor/js/tinymce/tinymce.min.js' %}" referrerpolicy="origin"></script>
   <script>
-      tinymce.init({{ tiny_mce_settings|safe }});
+{% verbatim %}
+  // ─── Django variable chip plugin ────────────────────────────────────────
+  tinymce.PluginManager.add('djangovars', function (editor) {
+    function buildPaths() {
+      var el = document.getElementById('editor-context-tree');
+      var out = [];
+      if (!el) return out;
+      try {
+        (function flatten(obj, pre, depth) {
+          if (!obj || typeof obj !== 'object' || Array.isArray(obj) || depth > 4) return;
+          Object.keys(obj).forEach(function (k) {
+            if (k.charAt(0) === '_') return;
+            var p = pre ? pre + '.' + k : k;
+            out.push(p);
+            flatten(obj[k], p, depth + 1);
+          });
+        })(JSON.parse(el.textContent), '', 0);
+      } catch (e) {}
+      return out;
+    }
+
+    editor.ui.registry.addMenuButton('djangovars', {
+      text: '{{ }}',
+      tooltip: 'Insert Django template variable',
+      fetch: function (callback) {
+        var items = buildPaths().map(function (p) {
+          return {
+            type: 'menuitem',
+            text: '\u007b\u007b ' + p + ' \u007d\u007d',
+            onAction: function () {
+              var _OV = '{{ ', _CV = ' }}';
+              editor.insertContent(
+                '<span class="django-var" contenteditable="false"' +
+                ' data-var="' + _OV + p.replace(/"/g, '&quot;') + _CV + '">' + _OV + p + _CV + '</span>&nbsp;'
+              );
+            },
+          };
+        });
+        if (!items.length) {
+          items = [{ type: 'menuitem', text: '(no context variables)', onAction: function () {} }];
+        }
+        callback(items);
+      },
+    });
+
+    // Strip chip spans back to raw \u007b\u007b \u007d\u007d before the form is submitted
+    editor.on('init', function () {
+      var form = editor.getElement() && editor.getElement().closest('form');
+      if (!form) return;
+      // Runs AFTER TinyMCE's own submit sync (registered earlier)
+      form.addEventListener('submit', function () {
+        var ta = editor.getElement();
+        ta.value = ta.value.replace(
+          /<span[^>]+data-var="([^"]*)"[^>]*>[\s\S]*?<\/span>/g,
+          '$1'
+        );
+      });
+    });
+  });
+{% endverbatim %}
+
+  // ─── Init with Django-aware settings ─────────────────────────────────────
+  var _tinySettings = {{ tiny_mce_settings|safe }};
+  // Apply oxide-dark skin + dark content area when Django admin dark mode is active
+  if (document.documentElement.getAttribute('data-theme') === 'dark') {
+    _tinySettings.skin = 'oxide-dark';
+    _tinySettings.content_css = 'dark';
+  }
+  // Protect Django template block/variable markers from HTML-entity-encoding by TinyMCE
+  _tinySettings.protect = [
+    /\{%[\s\S]*?%\}/g,
+    /\{\{[\s\S]*?\}\}/g,
+  ];
+  // Allow our chip span attributes to survive serialisation
+  _tinySettings.extended_valid_elements =
+    (_tinySettings.extended_valid_elements || '') +
+    ',span[class|style|id|data-var|contenteditable]';
+  // Register custom plugin + append variable button to toolbar
+  if (Array.isArray(_tinySettings.plugins)) {
+    _tinySettings.plugins.push('djangovars');
+  }
+  _tinySettings.toolbar = (_tinySettings.toolbar || '') + ' | djangovars';
+  // Chip style inside the editor content area
+  _tinySettings.content_style =
+    (_tinySettings.content_style || '') +
+    ' .django-var { display:inline-block; background:#e3f2fd; border:1px solid #90caf9;' +
+    ' border-radius:3px; padding:1px 5px; font-size:.85em; font-family:monospace;' +
+    ' color:#1565c0; cursor:default; user-select:none; }';
+  tinymce.init(_tinySettings);
   </script>
 {% elif editor_type == 'ace' %}
   {% include 'email_editor/js/ace_editor.html' %}
-{% elif editor_type == 'ckeditor' %}
-  <script src="{% static 'email_editor/js/ckeditor4/ckeditor.js' %}" referrerpolicy="origin"></script>
+{% elif editor_type == 'ckeditor5' %}
+  {# CKEditor 5 v41 — last release before the commercial-license requirement (v42+) #}
+  <script src="{% static 'email_editor/js/ckeditor5/build/ckeditor.js' %}"></script>
   <script>
-      let editor = CKEDITOR.replace('htmlEditor', {
-          allowedContent: true,
-          autoGrow_onStartup: true,
-          enterMode: CKEDITOR.ENTER_BR
-      } );
+{% verbatim %}
+  var _ckEditor = null;
+  (function () {
+    ClassicEditor.create(document.getElementById('htmlEditor'), {
+      toolbar: {
+        items: [
+          'undo', 'redo', '|',
+          'heading', '|',
+          'bold', 'italic', 'underline', 'strikethrough', '|',
+          'fontColor', 'fontBackgroundColor', 'fontSize', 'fontFamily', '|',
+          'alignment', '|',
+          'bulletedList', 'numberedList', 'outdent', 'indent', '|',
+          'link', 'uploadImage', 'insertTable', 'horizontalLine', 'htmlEmbed', '|',
+          'removeFormat', 'findAndReplace', '|',
+          'sourceEditing',
+        ],
+        shouldNotGroupWhenFull: true,
+      },
+      htmlSupport: {
+        allow: [{ name: /.*/, attributes: true, classes: true, styles: true }],
+      },
+      table: {
+        contentToolbar: [
+          'tableColumn', 'tableRow', 'mergeTableCells',
+          'tableProperties', 'tableCellProperties',
+        ],
+        defaultHeadings: { rows: 1 },
+      },
+      image: {
+        toolbar: [
+          'imageStyle:inline', 'imageStyle:block', 'imageStyle:side', '|',
+          'toggleImageCaption', 'imageTextAlternative',
+        ],
+      },
+      fontFamily: {
+        options: [
+          'default',
+          'Arial, Helvetica, sans-serif',
+          'Georgia, serif',
+          "Courier New, Courier, monospace",
+          'Tahoma, Geneva, sans-serif',
+          'Trebuchet MS, Helvetica, sans-serif',
+          'Verdana, Geneva, sans-serif',
+        ],
+      },
+      fontSize: {
+        options: ['default', 10, 11, 12, 13, 14, 16, 18, 20, 24, 28, 32, 36],
+      },
+      htmlEmbed: {
+        showPreviews: false,
+        sanitizeHtml: function (raw) { return { html: raw, hasChanged: false }; },
+      },
+      list: {
+        properties: { styles: true, startIndex: true, reversed: false },
+      },
+    }).then(function (editor) {
+      _ckEditor = editor;
+      _ckHighlightExistingVars(editor);
+
+      // ── Override CKEditor5 + Django admin table styles in the content area ──
+      // CKEditor injects border:1px solid #bfbfbf on every td/th, and the
+      // Django admin stylesheet adds hairline border-bottom on td/th.
+      // These make email tables look nothing like the final rendered output.
+      // We suppress them here so the editor canvas better reflects reality.
+      (function () {
+        var s = document.createElement('style');
+        s.textContent = [
+          // Remove CKEditor table cell borders injected by ck-content
+          '.ck-content .table table td, .ck-content .table table th { border: none !important; }',
+          // Remove Django admin td/th hairline borders bleeding into nested editables
+          '.ck-content td, .ck-content th { border-bottom: none !important; }',
+          // Remove Django admin td/th padding override
+          '.ck-content td, .ck-content th { padding: 0 !important; }',
+          // Suppress CKEditor selection-handle dots that appear on table widgets
+          '.ck-content .table { margin: 0 !important; }',
+        ].join('\n');
+        document.head.appendChild(s);
+      })();
+
+      // ── Strip CKEditor5's <figure class="table"> wrappers on every change ──
+      // CKEditor5 wraps every <table> in <figure class="table">…</figure>.
+      // Email clients do not understand <figure>, so we strip them.
+      // The loop handles nested figures (outer table wraps inner tables).
+      function _ckCleanOutput(html) {
+        var prev;
+        do {
+          prev = html;
+          html = html.replace(/<figure class="table">([\s\S]*?)<\/figure>/g, '$1');
+        } while (html !== prev);
+        return html;
+      }
+
+      // Sync cleaned HTML → textarea on every edit (keeps live preview current)
+      var ta = document.getElementById('htmlEditor');
+      // Immediate sync on editor ready (so unedited saves also send clean HTML)
+      if (ta) ta.value = _ckCleanOutput(editor.getData());
+      editor.model.document.on('change:data', function () {
+        if (ta) ta.value = _ckCleanOutput(editor.getData());
+      });
+
+      // Also strip on form submit (safety net)
+      var form = ta && ta.closest('form');
+      if (form) {
+        form.addEventListener('submit', function () {
+          if (ta) ta.value = _ckCleanOutput(editor.getData());
+        });
+      }
+    }).catch(function (err) { console.error(err); });
+  })();
+
+  // ─── CKEditor5 variable panel (rendered below editor, chips on click) ────
+  function _ckBuildPaths() {
+    var el = document.getElementById('editor-context-tree');
+    var out = [];
+    if (!el) return out;
+    try {
+      (function flatten(obj, pre, depth) {
+        if (!obj || typeof obj !== 'object' || Array.isArray(obj) || depth > 4) return;
+        Object.keys(obj).forEach(function (k) {
+          if (k.charAt(0) === '_') return;
+          var p = pre ? pre + '.' + k : k;
+          out.push(p);
+          flatten(obj[k], p, depth + 1);
+        });
+      })(JSON.parse(el.textContent), '', 0);
+    } catch (e) {}
+    return out;
+  }
+
+  function _ckInsertVar(path) {
+    if (!_ckEditor) return;
+    _ckEditor.model.change(function (writer) {
+      var _OV2 = '{{ ', _CV2 = ' }}';
+    _ckEditor.model.insertContent(
+        writer.createText(_OV2 + path + _CV2),
+        _ckEditor.model.document.selection
+      );
+    });
+    _ckEditor.editing.view.focus();
+  }
+
+  function _ckHighlightExistingVars() {
+    // No-op: CKEditor5 displays template variables as plain text (use source editing)
+  }
+
+  (function () {
+    var paths = _ckBuildPaths();
+    if (!paths.length) return;
+    var wrap = document.querySelector('.editor-isolation');
+    if (!wrap) return;
+    var panel = document.createElement('div');
+    panel.className = 'ck-var-panel';
+    panel.innerHTML = '<span class="ck-var-label">Insert variable:</span>';
+    paths.forEach(function (p) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'ck-var-chip';
+      btn.textContent = '{{ ' + p + ' }}';
+      btn.title = 'Click to insert at cursor';
+      btn.addEventListener('click', function () { _ckInsertVar(p); });
+      panel.appendChild(btn);
+    });
+    wrap.appendChild(panel);
+  })();
+{% endverbatim %}
   </script>
 {% endif %}
-</body>
-</html>
+{% endblock %}

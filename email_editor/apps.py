@@ -1,4 +1,4 @@
-from django.apps import AppConfig, apps, registry
+from django.apps import AppConfig, apps
 
 
 class EmailEditorConfig(AppConfig):

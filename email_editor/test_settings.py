@@ -19,10 +19,12 @@ DEBUG = True
 SITE_ID = 1
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': 'dev/db.sqlite3',
-        'TEST_NAME': ':memory:',
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": "dev/db.sqlite3",
+        "TEST": {
+            "NAME": ":memory:",
+        },
     }
 }
 
@@ -92,7 +94,7 @@ MEDIA_ROOT = 'media/'
 #     'TINY_MCE_COLOR_MAP':  [
 #         'FFFF00', 'Yellow',
 #     ],
-#     'WYSIWYG_EDITOR': 'ckeditor',
+#     'WYSIWYG_EDITOR': 'ckeditor5',
 # }
 
 USE_I18N = True

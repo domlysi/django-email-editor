@@ -1,5 +1,0 @@
-include LICENSE
-include README.md
-recursive-include email_editor/templates *
-recursive-include email_editor/static *
-recursive-include email_editor *.py
